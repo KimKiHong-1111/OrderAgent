@@ -8,9 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface OptionStockRepository extends JpaRepository<OptionStock, Long> {
 
-	List<OptionStock> findByProduct(Product product);
-
 	Optional<OptionStock> findByProductAndOptionName(Product product, String optionName);
-
-	void deleteByProduct(Product product);
 }
