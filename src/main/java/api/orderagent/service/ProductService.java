@@ -1,9 +1,14 @@
 package api.orderagent.service;
 
-import api.orderagent.crawler.UniformCrawler.UniformItem;
+import api.orderagent.crawler.dto.ProductRecord;
 import api.orderagent.domain.entity.Product;
 import api.orderagent.domain.repository.ProductRepository;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,21 +20,53 @@ public class ProductService {
 
 	private final ProductRepository productRepository;
 
-	public void saveCrawledProducts(List<UniformItem> itemList) {
-		for (UniformItem item : itemList) {
-			if (productRepository.existsByProductUrl(item.productUrl())) {
-				log.info("이미 등록된 상품: {}", item.name());
+	public void saveCrawledProducts(List<ProductRecord> records) {
+
+		List<Product> existing = productRepository.findAll();
+		Map<String, Product> productMap = existing.stream()
+			.collect(Collectors.toMap(Product::getProductUrl, Function.identity()));
+
+		List<Product> toSave = new ArrayList<>();
+
+		for (ProductRecord record : records) {
+			Product existingProduct = productMap.get(record.productUrl());
+
+			if (existingProduct == null) {
+				toSave.add(Product.builder()
+						.name(record.name())
+						.price(record.price())
+						.imageUrl(record.imageUrl())
+						.productUrl(record.productUrl())
+						.soldOut(record.soldOut())
+					.build());
 				continue;
 			}
-			Product product = Product.builder()
-				.name(item.name())
-				.productUrl(item.productUrl())
-				.imageUrl(item.imageUrl())
-				.price(item.price())
-				.build();
 
-			productRepository.save(product);
-			log.info("신규 상품 저장: {}", item.name());
+			// 품절 -> 판매중 일경우
+			if (existingProduct.isSoldOut() && !record.soldOut()) {
+				log.info("자동 주문 트리거: {}", record.name());
+				triggerAutoOrder(record);
+			}
+
+			// 업데이트가 필요한 경우 업데이트
+			if (isUpdated(existingProduct, record)) {
+				existingProduct.update(record);
+				toSave.add(existingProduct);
+			}
 		}
+		productRepository.saveAll(toSave);
+
+	}
+
+	private boolean isUpdated(Product product, ProductRecord record) {
+		return !product.getName().equals(record.name())
+			|| product.getPrice() != record.price()
+			|| !product.getImageUrl().equals(record.imageUrl())
+			|| product.isSoldOut() != record.soldOut();
+	}
+
+	private void triggerAutoOrder(ProductRecord record) {
+		// 현재는 로그 출력만, 추후 슬랙/이메일/웹훅 등으로 확장 가능
+		log.info("자동 주문 실행: {}", record.name());
 	}
 }

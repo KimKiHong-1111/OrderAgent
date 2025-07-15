@@ -1,0 +1,28 @@
+package api.orderagent.runner;
+
+import api.orderagent.crawler.UniformCrawler;
+
+import api.orderagent.crawler.dto.ProductRecord;
+import api.orderagent.service.ProductService;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+public class ProductInitRunner implements ApplicationRunner {
+
+	private final UniformCrawler uniformCrawler;
+	private final ProductService productService;
+
+
+	@Override
+	public void run(ApplicationArguments args) throws Exception {
+		List<ProductRecord> records = uniformCrawler.crawl();
+		productService.saveCrawledProducts(records);
+
+	}
+}
