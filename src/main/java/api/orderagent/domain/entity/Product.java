@@ -43,6 +43,7 @@ public class Product extends BaseTimeEntity{
 	private boolean soldOut;
 
 	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+	@Builder.Default
 	private List<OptionStock> optionStocks = new ArrayList<>();
 
 	public void update(ProductRecord record) {

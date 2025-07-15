@@ -1,25 +1,26 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: OrderAgent - Spring Boot Lambda
+Description: OrderAgent Lambda Deployment
 
 Globals:
   Function:
-    Timeout: 30
+    Timeout: 60
     MemorySize: 512
+    Runtime: java17
+    Architectures: [x86_64]
+    Environment:
+      Variables:
+        SPRING_PROFILES_ACTIVE: lambda
 
 Resources:
   OrderAgentFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: org.springframework.cloud.function.adapter.aws.FunctionInvoker
-      Runtime: java17
-      CodeUri: build/libs/orderagent-0.0.1-SNAPSHOT-aws.jar
-      Environment:
-        Variables:
-          FUNCTION_NAME: orderAgentHandler  # Function 이름 (Java 클래스 이름과 매칭됨)
+      FunctionName: OrderAgentFunction
+      CodeUri: .
+      Handler: org.springframework.cloud.function.adapter.aws.FunctionInvoker::handleRequest
       Events:
-        ApiEvent:
-          Type: Api
+        Schedule:
+          Type: Schedule
           Properties:
-            Path: /order
-            Method: post
+            Schedule: rate(1 day) # 하루 1번 실행

@@ -5,16 +5,20 @@ import api.orderagent.crawler.uniform.UniformCrawler;
 import api.orderagent.service.ProductService;
 import java.util.List;
 import java.util.function.Function;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
 
-@Component
+
 public class OrderAgentHandler implements Function<String, String> {
 
-	@Autowired
-	private ProductService productService;
-	@Autowired
-	private UniformCrawler uniformCrawler;
+	private static final ProductService productService;
+	private static final UniformCrawler uniformCrawler;
+
+	static {
+		GenericApplicationContext context = new AnnotationConfigApplicationContext(OrderAgentHandler.class);
+		productService = context.getBean(ProductService.class);
+		uniformCrawler = context.getBean(UniformCrawler.class);
+	}
 
 	@Override
 	public String apply(String input) {

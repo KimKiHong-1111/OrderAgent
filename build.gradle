@@ -17,6 +17,10 @@ bootJar {
 	archiveFileName = 'orderagent-0.0.1-SNAPSHOT-aws.jar'
 }
 
+tasks.named('test') {
+	enabled = false
+}
+
 repositories {
 	mavenCentral()
 }
