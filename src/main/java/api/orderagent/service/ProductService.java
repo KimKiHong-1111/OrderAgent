@@ -3,9 +3,12 @@ package api.orderagent.service;
 import api.orderagent.crawler.dto.ProductRecord;
 import api.orderagent.crawler.option.OptionCrawler;
 import api.orderagent.domain.entity.OptionStock;
+import api.orderagent.domain.entity.OrderLog;
 import api.orderagent.domain.entity.Product;
 import api.orderagent.domain.repository.OptionStockRepository;
+import api.orderagent.domain.repository.OrderLogRepository;
 import api.orderagent.domain.repository.ProductRepository;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +25,7 @@ public class ProductService {
 
 	private final ProductRepository productRepository;
 	private final OptionStockRepository optionStockRepository;
+	private final OrderLogRepository orderLogRepository;
 	private final OptionCrawler optionCrawler;
 
 	public void saveOptionsForAllProducts() {
@@ -95,5 +99,16 @@ public class ProductService {
 
 	private void triggerAutoOrder(OptionStock option) {
 		log.info("자동 주문 실행: [{} - {}] 품절 감지", option.getProduct(), option.getOptionName());
+
+		OrderLog logEntry = OrderLog.builder()
+			.triggerCondition("품절 감지")
+			.status("SIMULATED")
+			.product(option.getProduct())
+			.optionStock(option)
+			.orderedAt(LocalDateTime.now())
+			.build();
+
+		orderLogRepository.save(logEntry);
+
 	}
 }
