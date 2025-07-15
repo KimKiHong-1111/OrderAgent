@@ -1,51 +1,76 @@
 package api.orderagent.crawler;
 
+import api.orderagent.crawler.dto.ProductRecord;
+import io.github.bonigarcia.wdm.WebDriverManager;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class UniformCrawler {
 
 	private static final String UNIFORM_LIST_URL = "https://samsunglionsmall.com/product/list.html?cate_no=117";
 
-	public List<UniformItem> crawlUniformList() {
-		List<UniformItem> items = new ArrayList<>();
+	public List<ProductRecord> crawl() {
+		List<ProductRecord> products = new ArrayList<>();
+
+		// Selenium 드라이버 설정
+		WebDriverManager.chromedriver().setup();
+		WebDriver driver = new ChromeDriver();
 
 		try {
-			Document doc = Jsoup.connect(UNIFORM_LIST_URL).get();
+			driver.get(UNIFORM_LIST_URL);
+			WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+			wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("ul.prdList > li")));
 
-			Elements productElements = doc.select("ul.prdList li");
+			List<WebElement> items = driver.findElements(By.cssSelector("ul.prdList > li"));
 
-			for (Element el : productElements) {
-				String name = el.select(".name").text();
-				String href = el.select("a[href]").attr("href");
-				String productUrl = "https://samsunglionsmall.com" + href;
+			for (WebElement item : items) {
+				try {
+					String name = item.findElement(By.cssSelector(".name a")).getText().trim();
+					boolean soldOut = name.contains("[품절]") || name.contains("품절");
+					//가격이 없는경우
+					String priceText = item.findElement(By.cssSelector("li.product_price")).getText().trim();
 
-				String imgUrl = el.select("img.thumb").attr("src");
-				String priceStr = el.select(".price span:nth-child(1)").text().replaceAll("[^0-9]", "");
-				int price = priceStr.isEmpty() ? 0 : Integer.parseInt(priceStr);
+					int price = parsePrice(priceText);
 
-				items.add(new UniformItem(name, productUrl, imgUrl, price));
+					String imageUrl = item.findElement(By.cssSelector(".thumbnail img")).getAttribute("src");
+
+
+					String productUrl = item.findElement(By.cssSelector(".name a")).getAttribute("href");
+					if (!productUrl.startsWith("http")) {
+						productUrl = "https://samsunglionsmall.com" + productUrl;
+					}
+
+
+
+					products.add(new ProductRecord(name, price, imageUrl, productUrl, soldOut));
+				} catch (Exception e) {
+					log.warn("상품 정보 파싱 중 오류 발생: {} /  내용: {} ", e.getMessage(), item.getText());
+				}
 			}
 		} catch (Exception e) {
 			log.error("크롤링 실패: {}", e.getMessage());
+		} finally {
+			driver.quit();
 		}
-
-		return items;
+		return products;
 	}
 
-	//크롤러 결과를 임시로 담는 용도로 클래스 내부에 작성.
-	public record UniformItem(
-		String name,
-		String productUrl,
-		String imageUrl,
-		int price
-	) {}
+	private int parsePrice(String rawPrice) {
+		if (rawPrice == null || rawPrice.isBlank()) return 0;
+		return Integer.parseInt(rawPrice.replaceAll("[^0-9]", ""));
+	}
 }
