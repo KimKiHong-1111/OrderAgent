@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: OrderAgent - Spring Boot Lambda
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+
+Resources:
+  OrderAgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: org.springframework.cloud.function.adapter.aws.FunctionInvoker
+      Runtime: java17
+      CodeUri: build/libs/orderagent-0.0.1-SNAPSHOT-aws.jar
+      Environment:
+        Variables:
+          FUNCTION_NAME: orderAgentHandler  # Function 이름 (Java 클래스 이름과 매칭됨)
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /order
+            Method: post

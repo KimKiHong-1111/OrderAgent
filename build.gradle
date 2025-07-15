@@ -13,6 +13,10 @@ java {
 	}
 }
 
+bootJar {
+	archiveFileName = 'orderagent-0.0.1-SNAPSHOT-aws.jar'
+}
+
 repositories {
 	mavenCentral()
 }
@@ -37,6 +41,10 @@ dependencies {
 	
 	// WebDriverManager (크롬 드라이버 자동 관리)
 	implementation 'io.github.bonigarcia:webdrivermanager:5.7.0'
+	
+	// Lambda 지원
+	implementation 'org.springframework.cloud:spring-cloud-function-adapter-aws:4.0.0'
+	implementation 'org.springframework.cloud:spring-cloud-starter-function-web:4.0.0'
 	
 }
 
