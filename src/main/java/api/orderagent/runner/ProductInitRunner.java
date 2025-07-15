@@ -1,8 +1,9 @@
 package api.orderagent.runner;
 
-import api.orderagent.crawler.UniformCrawler;
+import api.orderagent.crawler.uniform.SamsungUniformCrawler;
 
 import api.orderagent.crawler.dto.ProductRecord;
+import api.orderagent.crawler.uniform.UniformCrawler;
 import api.orderagent.service.ProductService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +21,10 @@ public class ProductInitRunner implements ApplicationRunner {
 
 
 	@Override
-	public void run(ApplicationArguments args) throws Exception {
+	public void run(ApplicationArguments args) {
 		List<ProductRecord> records = uniformCrawler.crawl();
 		productService.saveCrawledProducts(records);
-
+		productService.saveOptionsForAllProducts();
 	}
+
 }

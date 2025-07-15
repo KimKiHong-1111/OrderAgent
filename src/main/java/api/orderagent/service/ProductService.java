@@ -1,12 +1,14 @@
 package api.orderagent.service;
 
 import api.orderagent.crawler.dto.ProductRecord;
+import api.orderagent.crawler.option.OptionCrawler;
+import api.orderagent.domain.entity.OptionStock;
 import api.orderagent.domain.entity.Product;
+import api.orderagent.domain.repository.OptionStockRepository;
 import api.orderagent.domain.repository.ProductRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,20 @@ import org.springframework.stereotype.Service;
 public class ProductService {
 
 	private final ProductRepository productRepository;
+	private final OptionStockRepository optionStockRepository;
+	private final OptionCrawler optionCrawler;
+
+
+	public void saveOptionsForAllProducts() {
+		List<Product> products = productRepository.findAll();
+
+		for (Product product : products) {
+			List<OptionStock> optionStocks = optionCrawler.crawlOptions(product);
+			optionStockRepository.saveAll(optionStocks);
+			log.info("[{}} 옵션 {}개 저장 완료", product.getName(), optionStocks.size());
+		}
+	}
+
 
 	public void saveCrawledProducts(List<ProductRecord> records) {
 
@@ -33,11 +49,11 @@ public class ProductService {
 
 			if (existingProduct == null) {
 				toSave.add(Product.builder()
-						.name(record.name())
-						.price(record.price())
-						.imageUrl(record.imageUrl())
-						.productUrl(record.productUrl())
-						.soldOut(record.soldOut())
+					.name(record.name())
+					.price(record.price())
+					.imageUrl(record.imageUrl())
+					.productUrl(record.productUrl())
+					.soldOut(record.soldOut())
 					.build());
 				continue;
 			}
