@@ -11,6 +11,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SamsungUniformCrawler implements UniformCrawler{
 
-	private static final String UNIFORM_LIST_URL = "https://samsunglionsmall.com/product/list.html?cate_no=117";
+	private static final String UNIFORM_LIST_URL = "http://localhost:8080/test_products.html";
 
 	@Override
 	public List<ProductRecord> crawl() {
@@ -28,35 +29,35 @@ public class SamsungUniformCrawler implements UniformCrawler{
 
 		// Selenium 드라이버 설정
 		WebDriverManager.chromedriver().setup();
+
+		ChromeOptions options = new ChromeOptions();
+		options.addArguments("--window-size=1920,1080");
+
 		WebDriver driver = new ChromeDriver();
 
 		try {
 			driver.get(UNIFORM_LIST_URL);
 			WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-			wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("ul.prdList > li")));
+			wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("div.product")));
 
-			List<WebElement> items = driver.findElements(By.cssSelector("ul.prdList > li"));
+			List<WebElement> items = driver.findElements(By.cssSelector("div.product"));
 
 			for (WebElement item : items) {
 				try {
-					String name = item.findElement(By.cssSelector(".name a")).getText().trim();
+					String name = item.findElement(By.cssSelector("a.name")).getText().trim();
 					boolean soldOut = name.contains("[품절]") || name.contains("품절");
-					//가격이 없는경우
-					String priceText;
-					try {
-						WebElement discountPrice = item.findElement(By.cssSelector("strong#span_product_price_text"));
-						priceText = discountPrice.getText().trim();
-					} catch (Exception e) {
-						priceText = item.findElement(By.cssSelector("li.product_price")).getText().trim();
-					}
+
+					String priceText = item.findElement(By.cssSelector("div.price")).getText().trim();
 
 					int price = parsePrice(priceText);
 
-					String imageUrl = item.findElement(By.cssSelector(".thumbnail img")).getAttribute("src");
-
-					String productUrl = item.findElement(By.cssSelector(".name a")).getAttribute("href");
+					String imageUrl = item.findElement(By.cssSelector("img")).getAttribute("src");
+					if (!imageUrl.startsWith("http")) {
+						imageUrl = "http://localhost:8080/" + imageUrl;
+					}
+					String productUrl = item.findElement(By.cssSelector("a.name")).getAttribute("href");
 					if (!productUrl.startsWith("http")) {
-						productUrl = "https://samsunglionsmall.com" + productUrl;
+						productUrl = "http://localhost:8080/" + productUrl;
 					}
 
 					products.add(new ProductRecord(name, price, imageUrl, productUrl, soldOut));

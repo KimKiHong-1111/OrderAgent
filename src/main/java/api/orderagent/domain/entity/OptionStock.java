@@ -32,4 +32,9 @@ public class OptionStock {
 	@JoinColumn(name = "product_id")
 	private Product product;
 
+	public void updateWith(OptionStock optionStock) {
+		this.inStock = optionStock.inStock;
+		this.checkedAt = optionStock.checkedAt;
+		this.stockCount = optionStock.stockCount;
+	}
 }

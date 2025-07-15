@@ -31,7 +31,8 @@ public class SamsungOptionCrawler implements OptionCrawler {
 	public SamsungOptionCrawler() {
 		WebDriverManager.chromedriver().setup();
 		ChromeOptions opts = new ChromeOptions();
-		opts.addArguments("--headless","--disable-gpu");
+		opts.addArguments("--headless", "--disable-gpu");
+		opts.addArguments("--window-size=1920,1080");
 		this.driver = new ChromeDriver(opts);
 	}
 
@@ -46,46 +47,66 @@ public class SamsungOptionCrawler implements OptionCrawler {
 		((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight);");
 
 		try {
-			Thread.sleep(2000);
-		} catch (InterruptedException ignored) {}// JS 렌더링 유도
+			Thread.sleep(1000);
+		} catch (InterruptedException ignored) {
+		}// JS 렌더링 유도
 
 		try {
-			wait.until(d -> d.findElements(By.cssSelector("select[name^='option'] > option")).size() > 1);
+			List<WebElement> listOptions = driver.findElements(By.cssSelector("ul.optionList > li"));
+			if (!listOptions.isEmpty()) {
+				log.info("[{}] ul.optionList 구조 감지", product.getName());
+				for (WebElement option : listOptions) {
+					String text = option.getText().trim();
+					if (text.isBlank() || text.contains("선택") || text.contains("필수")) {
+						continue;
+					}
 
-			List<WebElement> options = driver.findElements(
-				By.cssSelector("select[name^='option'] > option")
-			);
+					boolean soldOut = text.contains("품절");
 
-			for (WebElement opt : options) {
-				String text = opt.getText().trim();
-				if (text.isBlank() ||
-					text.contains("선택") ||
-					text.contains("필수") ||
-					text.contains("---")) {
-					continue;
+					optionStocks.add(OptionStock.builder()
+						.optionName(text)
+						.inStock(!soldOut)
+						.checkedAt(LocalDateTime.now())
+						.product(product)
+						.build());
+				}
+			} else {
+				List<WebElement> selectOptions = driver.findElements(By.cssSelector("select[name^='option'] > option"));
+
+				if (selectOptions.size() <= 1) {
+					wait.until(d -> d.findElements(By.cssSelector("select[name^='option'] > option")).size() > 1);
+					selectOptions = driver.findElements(By.cssSelector("select[name^='option'] > option"));
 				}
 
-				boolean soldOut = text.contains("품절");
+				log.info("[{}] select > option 구조 감지", product.getName());
 
-				optionStocks.add(OptionStock.builder()
-					.optionName(text)
-					.inStock(!soldOut)
-					.checkedAt(LocalDateTime.now())
-					.product(product)
-					.build());
+				for (WebElement option : selectOptions) {
+					String text = option.getText().trim();
+					if (text.isBlank() || text.contains("선택") || text.contains("필수") || text.contains("---")) {
+						continue;
+					}
+
+					boolean soldOut = text.contains("품절");
+
+					optionStocks.add(OptionStock.builder()
+						.optionName(text)
+						.inStock(!soldOut)
+						.checkedAt(LocalDateTime.now())
+						.product(product)
+						.build());
+				}
 			}
 
 			log.info("[{}] 옵션 {}개 크롤링 완료", product.getName(), optionStocks.size());
 
 		} catch (TimeoutException e) {
-			log.warn("❌ 옵션 로딩 타임아웃: {} / {}", product.getName(), product.getProductUrl());
+			log.warn("옵션 로딩 타임아웃: {} / {}", product.getName(), product.getProductUrl());
 		} catch (Exception e) {
-			log.warn("❌ 옵션 크롤링 실패: {} / {} / {}", product.getName(), product.getProductUrl(), e.getMessage());
+			log.warn("옵션 크롤링 실패: {} / {} / {}", product.getName(), product.getProductUrl(), e.getMessage());
 		}
 
 		return optionStocks;
 	}
-
 
 	@PreDestroy
 	public void cleanUp() {

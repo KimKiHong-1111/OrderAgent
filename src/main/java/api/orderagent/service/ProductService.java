@@ -24,14 +24,32 @@ public class ProductService {
 	private final OptionStockRepository optionStockRepository;
 	private final OptionCrawler optionCrawler;
 
-
 	public void saveOptionsForAllProducts() {
 		List<Product> products = productRepository.findAll();
 
 		for (Product product : products) {
-			List<OptionStock> optionStocks = optionCrawler.crawlOptions(product);
-			optionStockRepository.saveAll(optionStocks);
-			log.info("[{}} 옵션 {}개 저장 완료", product.getName(), optionStocks.size());
+			List<OptionStock> crawledOptions = optionCrawler.crawlOptions(product);
+			for (OptionStock option : crawledOptions) {
+				optionStockRepository.findByProductAndOptionName(option.getProduct(), option.getOptionName())
+					.ifPresentOrElse(existing -> {
+						boolean wasInStock = existing.isInStock();
+						boolean isNowOutOfStock = !option.isInStock();
+
+						existing.updateWith(option);
+						optionStockRepository.save(existing);
+
+						if (wasInStock && isNowOutOfStock) {
+							triggerAutoOrder(existing);
+						}
+
+					}, () -> {
+						optionStockRepository.save(option);
+						if (!option.isInStock()) {
+							triggerAutoOrder(option);
+						}
+					});
+			}
+			log.info("[{}] 옵션 {}개 저장 완료", product.getName(), crawledOptions.size());
 		}
 	}
 
@@ -58,12 +76,6 @@ public class ProductService {
 				continue;
 			}
 
-			// 품절 -> 판매중 일경우
-			if (existingProduct.isSoldOut() && !record.soldOut()) {
-				log.info("자동 주문 트리거: {}", record.name());
-				triggerAutoOrder(record);
-			}
-
 			// 업데이트가 필요한 경우 업데이트
 			if (isUpdated(existingProduct, record)) {
 				existingProduct.update(record);
@@ -81,8 +93,7 @@ public class ProductService {
 			|| product.isSoldOut() != record.soldOut();
 	}
 
-	private void triggerAutoOrder(ProductRecord record) {
-		// 현재는 로그 출력만, 추후 슬랙/이메일/웹훅 등으로 확장 가능
-		log.info("자동 주문 실행: {}", record.name());
+	private void triggerAutoOrder(OptionStock option) {
+		log.info("자동 주문 실행: [{} - {}] 품절 감지", option.getProduct(), option.getOptionName());
 	}
 }
