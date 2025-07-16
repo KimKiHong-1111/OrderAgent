@@ -17,7 +17,7 @@ public class UniformScheduler {
 	private final SamsungUniformCrawler crawler;
 	private final ProductService productService;
 
-	@Scheduled(cron = "0 0/1 * * * *") // 매 30분마다
+	@Scheduled(cron = "0 0/30 * * * *") // 매 30분마다
 	public void runCrawler() {
 		log.info("[스케쥴러] 유니폼 크롤링 시작");
 

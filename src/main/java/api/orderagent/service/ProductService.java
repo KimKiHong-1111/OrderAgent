@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -28,13 +29,19 @@ public class ProductService {
 	private final OrderLogRepository orderLogRepository;
 	private final OptionCrawler optionCrawler;
 
+	@Transactional(readOnly = true)
+	public List<Product> getAllProducts() {
+		return productRepository.findAll();
+	}
+
+	@Transactional
 	public void saveOptionsForAllProducts() {
 		List<Product> products = productRepository.findAll();
 
 		for (Product product : products) {
 			List<OptionStock> crawledOptions = optionCrawler.crawlOptions(product);
 			for (OptionStock option : crawledOptions) {
-				optionStockRepository.findByProductAndOptionName(option.getProduct(), option.getOptionName())
+				optionStockRepository.findByProductIdAndOptionName(option.getProduct().getId(), option.getOptionName())
 					.ifPresentOrElse(existing -> {
 						boolean wasInStock = existing.isInStock();
 						boolean isNowOutOfStock = !option.isInStock();
@@ -57,7 +64,7 @@ public class ProductService {
 		}
 	}
 
-
+	@Transactional
 	public void saveCrawledProducts(List<ProductRecord> records) {
 
 		List<Product> existing = productRepository.findAll();

@@ -47,9 +47,9 @@ dependencies {
 	implementation 'io.github.bonigarcia:webdrivermanager:5.7.0'
 	
 	// Lambda 지원
-	implementation 'org.springframework.cloud:spring-cloud-function-adapter-aws:4.0.0'
-	implementation 'org.springframework.cloud:spring-cloud-starter-function-web:4.0.0'
-	
+//	implementation 'org.springframework.cloud:spring-cloud-function-adapter-aws:4.0.0'
+//	implementation 'org.springframework.cloud:spring-cloud-starter-function-web:4.0.0'
+//
 }
 
 tasks.named('test') {
