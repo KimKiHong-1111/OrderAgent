@@ -39,39 +39,84 @@ public class SamsungProductCrawler implements ProductCrawler {
 
 		try {
 			driver.get(LIST_URL);
+			log.info("🔗 페이지 로딩 완료");
 			WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
 			while (true) {
-				wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("div.prdList_item")));
+				wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("div.prdList__item")));
+				log.info("✅ 상품 셀렉터 로딩 완료");
 
-				List<WebElement> items = driver.findElements(By.cssSelector("div.prdList_item"));
+				List<WebElement> items = driver.findElements(By.cssSelector("div.prdList__item"));
+				log.info("📦 추출된 상품 수: {}", items.size());
 
+				// ✅ StaleElement 방지를 위해 URL만 먼저 따로 저장
+				List<String> detailUrls = new ArrayList<>();
 				for (WebElement item : items) {
 					try {
-						WebElement linkElement = item.findElement(By.cssSelector("div.prdImg > a"));
-						String detailUrl = linkElement.getDomAttribute("href");
+						String href = item.findElement(By.cssSelector("div.prdImg > a")).getDomAttribute("href");
+						if (href != null && !href.startsWith("http")) {
+							href = BASE_URL + href;
+						}
+						String encodeUrl = java.net.URI.create(href).toASCIIString(); // 한글 인코딩 방지
+						detailUrls.add(encodeUrl);
+					} catch (Exception e) {
+						log.warn("상세 링크 추출 실패 : {}", e.getMessage());
+					}
+				}
 
-						//상세 페이지 접근
+				// ✅ 상세 페이지 방문 및 정보 추출
+				for (String detailUrl : detailUrls) {
+					try {
 						driver.navigate().to(Objects.requireNonNull(detailUrl));
-						wait.until(
-							ExpectedConditions.presenceOfElementLocated(By.cssSelector("div.xans-product-detail")));
+						wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("div.xans-product-detail")));
 
 						String productName = driver.findElement(By.cssSelector("h3.title")).getText().trim();
-						String imageUrl = driver.findElement(By.cssSelector("div.keyImg img")).getDomAttribute("src");
-						String priceText = driver.findElement(By.cssSelector("span#span_product_price_text")).getText()
-							.trim();
-						int price = parsePrice(priceText);
 
-						//옵션 추출
-						List<WebElement> optionElements = driver.findElements(
-							By.cssSelector("div.option_box select option"));
-						for (WebElement option : optionElements) {
-							String optionName = option.getText().trim();
-							if (optionName.isBlank() || optionName.contains("옵션 선택")) {
-								continue;
+						String imageUrl = "";
+						try {
+							WebElement imageElement = wait.until(
+								ExpectedConditions.presenceOfElementLocated(By.cssSelector("div.thumbnail img.BigImage")));
+							imageUrl = imageElement.getDomAttribute("src");
+							//혹시 이미지 경로가 //로 시작하면 http: 붙여주기
+							if (Objects.requireNonNull(imageUrl).startsWith("//")) {
+								imageUrl = "https:" + imageUrl;
 							}
+						} catch (NoSuchElementException e) {
+							log.warn("이미지 없음: {}", detailUrl);
+						}
+
+						int price = 0;
+						try {
+							WebElement metaPrice = driver.findElement(
+								By.cssSelector("meta[property='product:price:amount']"));
+							String priceText = Objects.requireNonNull(metaPrice.getDomAttribute("content")).trim();
+							price = parsePrice(priceText);
+						} catch (NoSuchElementException e) {
+							log.warn("가격 정보 메타 태그 없음 : {}", detailUrl);
+						}
+
+
+						List<WebElement> optionElements = new ArrayList<>();
+						try {
+							WebElement selectElement = driver.findElement(By.name("option1"));
+							optionElements = selectElement.findElements(By.tagName("option"));
+							log.info("옵션 개수: {}", optionElements.size());
+						} catch (NoSuchElementException e) {
+							log.warn("옵션 셀렉트 박스 없음: {}", detailUrl);
+						}
+						for (WebElement option : optionElements) {
+							String optionName = option.getDomAttribute("value");
+							log.info("🧪 원본 option tag: {}, text='{}', value='{}'",
+								option.getDomAttribute("outerHTML"),
+								option.getText().trim(),
+								option.getDomAttribute("value"));
+
+							if (Objects.requireNonNull(optionName).contains("옵션을 선택") || optionName.contains("---")) continue;
 
 							boolean soldOut = optionName.contains("품절");
+
+							log.info("🧵 product={}, option={}, price={}, image={}, inStock={}",
+								productName, optionName, price, imageUrl, !soldOut);
 
 							products.add(new ProductRecord(
 								productName,
@@ -79,27 +124,43 @@ public class SamsungProductCrawler implements ProductCrawler {
 								price,
 								imageUrl,
 								detailUrl,
-								!optionName.contains("품절"),
-								LocalDateTime.now()));
+								!soldOut,
+								LocalDateTime.now()
+							));
 						}
+
 						driver.navigate().back();
-						wait.until(
-							ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector("ul.prdList > li")));
+						wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector("div.prdList__item")));
 
 					} catch (Exception e) {
 						log.warn("상세 페이지 처리 중 오류 : {}", e.getMessage());
 					}
 				}
+
+				// 다음 페이지 이동 처리
 				try {
-					WebElement nextBtn = driver.findElement(By.cssSelector("a.btn.next"));
-					if (nextBtn.getDomAttribute("href") != null) {
-						nextBtn.click();
-						wait.until(ExpectedConditions.stalenessOf(items.get(0)));
+					List<WebElement> pageLinks = driver.findElements(By.cssSelector("ol li a"));
+					String currentUrl = driver.getCurrentUrl();
+					String nextUrl = null;
+
+					for (WebElement pageLink : pageLinks) {
+						String href = pageLink.getDomAttribute("href");
+						String clazz = pageLink.getDomAttribute("class");
+
+						if (clazz != null && !clazz.contains("this") && href != null) {
+							nextUrl = BASE_URL + href;
+							break;
+						}
+					}
+
+					if (nextUrl != null && !nextUrl.equals(currentUrl)) {
+						driver.get(nextUrl);
+						wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("div.prdList__item")));
 					} else {
-						break;
+						break; // 마지막 페이지
 					}
 				} catch (NoSuchElementException e) {
-					break;
+					break; // 페이지 네비게이션 없음
 				}
 			}
 
@@ -108,6 +169,7 @@ public class SamsungProductCrawler implements ProductCrawler {
 		} finally {
 			driver.quit();
 		}
+
 		return products;
 	}
 

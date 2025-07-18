@@ -6,11 +6,12 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
+@Slf4j
 @Configuration
 public class DynamoDBConfig {
 
@@ -27,8 +28,8 @@ public class DynamoDBConfig {
 	private String secretKey;
 
 	@Bean
-	@Primary
 	public AmazonDynamoDB amazonDynamoDB() {
+		log.info("🔌 DynamoDB 연결 시도: endpoint={}, region={}, accessKey={}", dynamoEndpoint, region, accessKey);
 		return AmazonDynamoDBClientBuilder.standard()
 			.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(dynamoEndpoint, region))
 			.withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
@@ -36,7 +37,6 @@ public class DynamoDBConfig {
 	}
 
 	@Bean
-	@Primary
 	public DynamoDBMapper dynamoDBMapper() {
 		return new DynamoDBMapper(amazonDynamoDB());
 	}

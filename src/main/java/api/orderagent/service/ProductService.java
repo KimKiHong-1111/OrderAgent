@@ -4,6 +4,7 @@ import api.orderagent.crawler.dto.ProductRecord;
 import api.orderagent.crawler.uniform.ProductCrawler;
 import api.orderagent.domain.entity.Product;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -52,5 +53,9 @@ public class ProductService {
 	 */
 	public Product find(String pk, String sk) {
 		return dynamoDBMapper.load(Product.class, pk, sk);
+	}
+
+	public List<Product> findAll() {
+		return dynamoDBMapper.scan(Product.class, new DynamoDBScanExpression());
 	}
 }
