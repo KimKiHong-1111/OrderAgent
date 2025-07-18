@@ -15,12 +15,5 @@ public class ProductController {
 
 	private final ProductService productService;
 
-	@GetMapping
-	public List<ProductResDto> getProducts() {
-		return productService.getAllProducts()
-			.stream()
-			.map(ProductResDto::toDto)
-			.toList();
-	}
 
 }

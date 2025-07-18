@@ -23,6 +23,7 @@ tasks.named('test') {
 
 repositories {
 	mavenCentral()
+	maven { url "https://jitpack.io" }
 }
 
 dependencies {
@@ -31,14 +32,10 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
-	
-	// jsoup 의존성
-	implementation 'org.jsoup:jsoup:1.17.1'
 	
 	// Selenium
 	implementation 'org.seleniumhq.selenium:selenium-java:4.21.0'
@@ -46,10 +43,14 @@ dependencies {
 	// WebDriverManager (크롬 드라이버 자동 관리)
 	implementation 'io.github.bonigarcia:webdrivermanager:5.7.0'
 	
-	// Lambda 지원
+	//Lambda 지원
 //	implementation 'org.springframework.cloud:spring-cloud-function-adapter-aws:4.0.0'
 //	implementation 'org.springframework.cloud:spring-cloud-starter-function-web:4.0.0'
-//
+	
+	//DynamoDB
+	implementation 'software.amazon.awssdk:dynamodb:2.21.0' // 🔧 버전 명시 필수! (v2 SDK)
+	implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.12.700' // (v1 SDK - 필요한 경우만 사용)
+
 }
 
 tasks.named('test') {

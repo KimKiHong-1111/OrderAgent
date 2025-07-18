@@ -1,55 +1,63 @@
 package api.orderagent.domain.entity;
 
-import api.orderagent.crawler.dto.ProductRecord;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverter;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
-@Entity
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Product extends BaseTimeEntity{
+@DynamoDBTable(tableName = "Product")
+public class Product {
 
-	@Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	@DynamoDBHashKey(attributeName = "pk")
+	private String pk; //상품URL
 
-	@Column(nullable = false)
-	private String name;
+	@DynamoDBRangeKey(attributeName = "sk")
+	private String sk; //옵션명 ex: M,L,XL 등 사이즈
 
-	@Column(unique = true, length = 1000)
-	private String productUrl;
+	@DynamoDBAttribute(attributeName = "productName")
+	private String productName;
 
-	@Column(nullable = false)
+	@DynamoDBAttribute(attributeName = "imageUrl")
 	private String imageUrl;
 
+	@DynamoDBAttribute(attributeName = "price")
 	private int price;
 
-	@Column(nullable = false)
-	private boolean soldOut;
+	@DynamoDBAttribute(attributeName = "inStock")
+	private boolean inStock;
 
-	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-	@Builder.Default
-	private List<OptionStock> optionStocks = new ArrayList<>();
+	@DynamoDBAttribute(attributeName = "checkedAt")
+	@DynamoDBTypeConverted(converter = LocalDateTimeConverter.class)
+	private LocalDateTime checkedAt;
 
-	public void update(ProductRecord record) {
-		this.name = record.name();
-		this.price = record.price();
-		this.imageUrl = record.imageUrl();
-		this.soldOut = record.soldOut();
+	public static class LocalDateTimeConverter implements DynamoDBTypeConverter<String, LocalDateTime> {
+		@Override
+		public String convert(final LocalDateTime time) {
+			return time.toString();
+		}
+		@Override
+		public LocalDateTime unconvert(final String stringValue) {
+			return LocalDateTime.parse(stringValue);
+		}
+	}
+
+	public void update(Product product) {
+		this.inStock = product.inStock;
+		this.checkedAt = product.checkedAt;
+		this.price = product.price;
+		this.productName = product.productName;
+		this.imageUrl = product.imageUrl;
 	}
 }
