@@ -1,4 +1,4 @@
-package api.orderagent.crawler.dto;
+package api.orderagent.dto;
 
 import java.time.LocalDateTime;
 

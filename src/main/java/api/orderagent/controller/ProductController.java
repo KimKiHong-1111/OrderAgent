@@ -1,8 +1,7 @@
 package api.orderagent.controller;
 
-import api.orderagent.crawler.dto.ProductRecord;
+import api.orderagent.dto.ProductRecord;
 import api.orderagent.domain.entity.Product;
-import api.orderagent.dto.ProductResDto;
 import api.orderagent.service.ProductService;
 import api.orderagent.service.ProductService.SaveResult;
 import java.util.List;
@@ -11,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j

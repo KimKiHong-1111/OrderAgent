@@ -1,6 +1,6 @@
 package api.orderagent.crawler.uniform;
 
-import api.orderagent.crawler.dto.ProductRecord;
+import api.orderagent.dto.ProductRecord;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.time.Duration;
 import java.time.LocalDateTime;

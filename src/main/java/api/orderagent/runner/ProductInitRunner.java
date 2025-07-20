@@ -1,6 +1,6 @@
 package api.orderagent.runner;
 
-import api.orderagent.crawler.dto.ProductRecord;
+import api.orderagent.dto.ProductRecord;
 import api.orderagent.crawler.uniform.ProductCrawler;
 import api.orderagent.service.ProductService;
 import java.util.List;
@@ -9,8 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+@Profile("local")
 @Slf4j
 @Component
 @RequiredArgsConstructor

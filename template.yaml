@@ -18,7 +18,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: OrderAgentFunction
-      CodeUri: .   # ← 현재 build.gradle이 있는 루트
+      CodeUri: .
       Handler: org.springframework.cloud.function.adapter.aws.FunctionInvoker::handleRequest
       Events:
         Schedule:

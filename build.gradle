@@ -27,13 +27,14 @@ repositories {
 }
 
 dependencies {
+	// Spring Boot Core
 	implementation 'org.springframework.boot:spring-boot-starter'
+	
+	// Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	
-	runtimeOnly 'com.mysql:mysql-connector-j'
+	// Lombok
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	
@@ -43,13 +44,12 @@ dependencies {
 	// WebDriverManager (크롬 드라이버 자동 관리)
 	implementation 'io.github.bonigarcia:webdrivermanager:5.7.0'
 	
-	//Lambda 지원
+	// Lambda
 	implementation 'org.springframework.cloud:spring-cloud-function-adapter-aws:4.0.0'
 	implementation 'org.springframework.cloud:spring-cloud-starter-function-web:4.0.0'
 	
-	//DynamoDB
+	// DynamoDB  (SDK v2만 사용 권장)
 	implementation 'software.amazon.awssdk:dynamodb:2.21.0' // 🔧 버전 명시 필수! (v2 SDK)
-	implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.12.700' // (v1 SDK - 필요한 경우만 사용)
 
 }
 

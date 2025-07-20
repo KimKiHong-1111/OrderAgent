@@ -1,6 +1,6 @@
 package api.orderagent.service;
 
-import api.orderagent.crawler.dto.ProductRecord;
+import api.orderagent.dto.ProductRecord;
 import api.orderagent.crawler.uniform.ProductCrawler;
 import api.orderagent.domain.entity.Product;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;

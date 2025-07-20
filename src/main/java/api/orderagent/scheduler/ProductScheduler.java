@@ -1,6 +1,6 @@
 package api.orderagent.scheduler;
 
-import api.orderagent.crawler.dto.ProductRecord;
+import api.orderagent.dto.ProductRecord;
 import api.orderagent.service.ProductService;
 import api.orderagent.service.ProductService.SaveResult;
 import java.util.List;
