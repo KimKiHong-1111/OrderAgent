@@ -7,7 +7,8 @@ Globals:
     Timeout: 60
     MemorySize: 512
     Runtime: java17
-    Architectures: [x86_64]
+    Architectures:
+      - x86_64
     Environment:
       Variables:
         SPRING_PROFILES_ACTIVE: lambda
@@ -17,10 +18,12 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: OrderAgentFunction
-      CodeUri: .
+      CodeUri: .   # ← 현재 build.gradle이 있는 루트
       Handler: org.springframework.cloud.function.adapter.aws.FunctionInvoker::handleRequest
       Events:
         Schedule:
           Type: Schedule
           Properties:
-            Schedule: rate(1 day) # 하루 1번 실행
+            Schedule: rate(1 day)
+    Metadata:
+      SamResourceId: OrderAgentFunction

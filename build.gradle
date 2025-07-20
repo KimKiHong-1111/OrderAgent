@@ -44,8 +44,8 @@ dependencies {
 	implementation 'io.github.bonigarcia:webdrivermanager:5.7.0'
 	
 	//Lambda 지원
-//	implementation 'org.springframework.cloud:spring-cloud-function-adapter-aws:4.0.0'
-//	implementation 'org.springframework.cloud:spring-cloud-starter-function-web:4.0.0'
+	implementation 'org.springframework.cloud:spring-cloud-function-adapter-aws:4.0.0'
+	implementation 'org.springframework.cloud:spring-cloud-starter-function-web:4.0.0'
 	
 	//DynamoDB
 	implementation 'software.amazon.awssdk:dynamodb:2.21.0' // 🔧 버전 명시 필수! (v2 SDK)

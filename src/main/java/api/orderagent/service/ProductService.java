@@ -6,6 +6,7 @@ import api.orderagent.domain.entity.Product;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +20,10 @@ public class ProductService {
 	private final ProductCrawler productCrawler;
 	private final DynamoDBMapper dynamoDBMapper;
 
-	public int saveCrawledProducts(List<ProductRecord> records) {
+	public SaveResult saveCrawledProducts(List<ProductRecord> records) {
 		int autoOrderCount = 0;
+		List<ProductRecord> soldOutList = new ArrayList<>();
+
 		for (ProductRecord record : records) {
 			try {
 				Product product = Product.builder()
@@ -36,6 +39,7 @@ public class ProductService {
 				if (!record.inStock()) {
 					log.warn("품절 상품 자동 주문 시도: {} [{}]", record.productName(), record.optionName());
 					autoOrderCount++;
+					soldOutList.add(record);
 				}
 				dynamoDBMapper.save(product);
 				log.info("저장 완료 : {}", product.getProductName() + "[" + product.getSk() + "]");
@@ -43,23 +47,10 @@ public class ProductService {
 				log.error("저장 실패: {} / 에러 : {}", record.productName(), e.getMessage());
 			}
 		}
-		return autoOrderCount;
+		return new SaveResult(autoOrderCount, soldOutList);
 	}
 
-	/**
-	 * 단일 Product 저장
-	 */
-	public void save(Product product) {
-		dynamoDBMapper.save(product);
-		log.info("✅ 저장 완료: {}", product.getProductName());
-	}
-
-	/**
-	 * 단일 Product 조회 (PK + SK)
-	 */
-	public Product find(String pk, String sk) {
-		return dynamoDBMapper.load(Product.class, pk, sk);
-	}
+	public record SaveResult(int autoOrderCount, List<ProductRecord> soldOutRecords) {}
 
 	public List<Product> findAll() {
 		return dynamoDBMapper.scan(Product.class, new DynamoDBScanExpression());
