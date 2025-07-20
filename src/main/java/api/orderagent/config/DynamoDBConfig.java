@@ -1,15 +1,15 @@
 package api.orderagent.config;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import java.net.URI;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 @Slf4j
 @Configuration
@@ -28,16 +28,19 @@ public class DynamoDBConfig {
 	private String secretKey;
 
 	@Bean
-	public AmazonDynamoDB amazonDynamoDB() {
+	public DynamoDbClient dynamoDbClient() {
 		log.info("🔌 DynamoDB 연결 시도: endpoint={}, region={}, accessKey={}", dynamoEndpoint, region, accessKey);
-		return AmazonDynamoDBClientBuilder.standard()
-			.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(dynamoEndpoint, region))
-			.withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
+		return DynamoDbClient.builder()
+			.endpointOverride(URI.create(dynamoEndpoint))
+			.region(Region.of(region))
+			.credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey,secretKey)))
 			.build();
 	}
 
 	@Bean
-	public DynamoDBMapper dynamoDBMapper() {
-		return new DynamoDBMapper(amazonDynamoDB());
+	public DynamoDbEnhancedClient dynamoDbEnhancedClient(DynamoDbClient dynamoDbClient) {
+		return DynamoDbEnhancedClient.builder()
+			.dynamoDbClient(dynamoDbClient)
+			.build();
 	}
 }

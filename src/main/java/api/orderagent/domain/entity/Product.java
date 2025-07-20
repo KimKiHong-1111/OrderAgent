@@ -1,63 +1,99 @@
 package api.orderagent.domain.entity;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverter;
 import java.time.LocalDateTime;
 
+import java.time.format.DateTimeFormatter;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
+import software.amazon.awssdk.enhanced.dynamodb.AttributeValueType;
+import software.amazon.awssdk.enhanced.dynamodb.EnhancedType;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@DynamoDBTable(tableName = "product")
+@DynamoDbBean
 public class Product {
 
-	@DynamoDBHashKey(attributeName = "pk")
+
 	private String pk; //상품URL
-
-	@DynamoDBRangeKey(attributeName = "sk")
 	private String sk; //옵션명 ex: M,L,XL 등 사이즈
-
-	@DynamoDBAttribute(attributeName = "productName")
 	private String productName;
-
-	@DynamoDBAttribute(attributeName = "imageUrl")
 	private String imageUrl;
-
-	@DynamoDBAttribute(attributeName = "price")
 	private int price;
-
-	@DynamoDBAttribute(attributeName = "inStock")
 	private boolean inStock;
-
-	@DynamoDBAttribute(attributeName = "checkedAt")
-	@DynamoDBTypeConverted(converter = LocalDateTimeConverter.class)
 	private LocalDateTime checkedAt;
 
-	public static class LocalDateTimeConverter implements DynamoDBTypeConverter<String, LocalDateTime> {
+	@DynamoDbPartitionKey
+	@DynamoDbAttribute("pk")
+	public String getPk() {
+		return pk;
+	}
+
+	@DynamoDbSortKey
+	@DynamoDbAttribute("sk")
+	public String getSk() {
+		return sk;
+	}
+
+	@DynamoDbAttribute("productName")
+	public String getProductName() {
+		return productName;
+	}
+
+	@DynamoDbAttribute("imageUrl")
+	public String getImageUrl() {
+		return imageUrl;
+	}
+
+	@DynamoDbAttribute("price")
+	public int getPrice() {
+		return price;
+	}
+
+	@DynamoDbAttribute("inStock")
+	public boolean isInStock() {
+		return inStock;
+	}
+
+	@DynamoDbConvertedBy(LocalDateTimeAttributeConverter.class)
+	@DynamoDbAttribute("checkedAt")
+	public LocalDateTime getCheckedAt() {
+		return checkedAt;
+	}
+
+	public static class LocalDateTimeAttributeConverter implements AttributeConverter<LocalDateTime> {
+
+		private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
 		@Override
-		public String convert(final LocalDateTime time) {
-			return time.toString();
+		public AttributeValue transformFrom(LocalDateTime input) {
+			return AttributeValue.fromS(FORMATTER.format(input));
 		}
+
 		@Override
-		public LocalDateTime unconvert(final String stringValue) {
-			return LocalDateTime.parse(stringValue);
+		public LocalDateTime transformTo(AttributeValue input) {
+			return LocalDateTime.parse(input.s(), FORMATTER);
+		}
+
+		@Override
+		public EnhancedType<LocalDateTime> type() {
+			return EnhancedType.of(LocalDateTime.class);
+		}
+
+		@Override
+		public AttributeValueType attributeValueType() {
+			return AttributeValueType.S;
 		}
 	}
 
-	public void update(Product product) {
-		this.inStock = product.inStock;
-		this.checkedAt = product.checkedAt;
-		this.price = product.price;
-		this.productName = product.productName;
-		this.imageUrl = product.imageUrl;
-	}
 }

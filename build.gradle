@@ -50,6 +50,7 @@ dependencies {
 	
 	// DynamoDB  (SDK v2만 사용 권장)
 	implementation 'software.amazon.awssdk:dynamodb:2.21.0' // 🔧 버전 명시 필수! (v2 SDK)
+	implementation 'software.amazon.awssdk:dynamodb-enhanced:2.21.0'
 
 }
 

@@ -3,14 +3,16 @@ package api.orderagent.service;
 import api.orderagent.dto.ProductRecord;
 import api.orderagent.crawler.uniform.ProductCrawler;
 import api.orderagent.domain.entity.Product;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
 
 @Slf4j
 @Service
@@ -18,11 +20,18 @@ import org.springframework.stereotype.Service;
 public class ProductService {
 
 	private final ProductCrawler productCrawler;
-	private final DynamoDBMapper dynamoDBMapper;
+	private final DynamoDbEnhancedClient dynamoDbEnhancedClient;
+
+	private DynamoDbTable<Product> getTable() {
+		return dynamoDbEnhancedClient.table("Product", TableSchema.fromBean(Product.class));
+	}
+
 
 	public SaveResult saveCrawledProducts(List<ProductRecord> records) {
 		int autoOrderCount = 0;
 		List<ProductRecord> soldOutList = new ArrayList<>();
+
+		DynamoDbTable<Product> table = getTable();
 
 		for (ProductRecord record : records) {
 			try {
@@ -41,7 +50,7 @@ public class ProductService {
 					autoOrderCount++;
 					soldOutList.add(record);
 				}
-				dynamoDBMapper.save(product);
+				table.putItem(product);
 				log.info("저장 완료 : {}", product.getProductName() + "[" + product.getSk() + "]");
 			} catch (Exception e) {
 				log.error("저장 실패: {} / 에러 : {}", record.productName(), e.getMessage());
@@ -53,7 +62,12 @@ public class ProductService {
 	public record SaveResult(int autoOrderCount, List<ProductRecord> soldOutRecords) {}
 
 	public List<Product> findAll() {
-		return dynamoDBMapper.scan(Product.class, new DynamoDBScanExpression());
+		DynamoDbTable<Product> table = getTable();
+
+		return table.scan(ScanEnhancedRequest.builder().build())
+			.items()
+			.stream()
+			.toList();
 	}
 
 	public ProductCrawler getProductCrawler() {
