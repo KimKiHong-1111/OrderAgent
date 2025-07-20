@@ -23,8 +23,10 @@ public class ProductInitRunner implements ApplicationRunner {
 	public void run(ApplicationArguments args) {
 		List<ProductRecord> records = productCrawler.crawl();
 		log.info("📦 크롤링된 상품 수: {}", records.size());
-		productService.saveCrawledProducts(records);
+		int autoOrderCount = productService.saveCrawledProducts(records);
 		log.info("✅ 최종 크롤링 완료된 상품 수: {}", records.size());
+		log.info("🛒 자동 주문 시도된 품절 상품 수: {}", autoOrderCount);
+
 	}
 
 }

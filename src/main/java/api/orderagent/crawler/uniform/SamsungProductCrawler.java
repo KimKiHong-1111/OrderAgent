@@ -11,6 +11,7 @@ import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -105,35 +106,42 @@ public class SamsungProductCrawler implements ProductCrawler {
 							log.warn("옵션 셀렉트 박스 없음: {}", detailUrl);
 						}
 						for (WebElement option : optionElements) {
-							String optionName = option.getDomAttribute("value");
+//							String optionText = option.getText().trim();
+							JavascriptExecutor js = (JavascriptExecutor) driver;
+							String optionText = (String) js.executeScript("return arguments[0].textContent;", option);
+							optionText = optionText != null ? optionText.trim() : "";
+							String optionValue = option.getDomAttribute("value");
 							log.info("🧪 원본 option tag: {}, text='{}', value='{}'",
 								option.getDomAttribute("outerHTML"),
-								option.getText().trim(),
-								option.getDomAttribute("value"));
+								optionText,
+								optionValue
+							);
 
-							if (Objects.requireNonNull(optionName).contains("옵션을 선택") || optionName.contains("---")) continue;
+							if (optionValue == null || optionValue.contains("옵션을 선택") || optionValue.contains("---")) continue;
 
-							boolean soldOut = optionName.contains("품절");
-
-							log.info("🧵 product={}, option={}, price={}, image={}, inStock={}",
-								productName, optionName, price, imageUrl, !soldOut);
+							boolean soldOut = optionText.toLowerCase().replaceAll("\\s", "").contains("[품절]");
 
 							products.add(new ProductRecord(
 								productName,
-								optionName,
+								optionValue,
 								price,
 								imageUrl,
 								detailUrl,
 								!soldOut,
 								LocalDateTime.now()
 							));
+
+							log.info("🧵저장 대상: product={}, option={}, price={}, inStock={}",
+								productName, optionValue, price, !soldOut);
+							log.info("🔎 옵션 파싱 결과 - optionText='{}', soldOut={}, inStock={}",
+								optionText, soldOut, !soldOut);
 						}
 
 						driver.navigate().back();
 						wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector("div.prdList__item")));
 
 					} catch (Exception e) {
-						log.warn("상세 페이지 처리 중 오류 : {}", e.getMessage());
+						log.warn("상세 페이지 처리 중 오류 ", e);
 					}
 				}
 

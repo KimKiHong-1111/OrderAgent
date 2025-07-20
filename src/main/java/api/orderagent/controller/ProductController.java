@@ -1,11 +1,13 @@
 package api.orderagent.controller;
 
+import api.orderagent.crawler.dto.ProductRecord;
 import api.orderagent.domain.entity.Product;
 import api.orderagent.dto.ProductResDto;
 import api.orderagent.service.ProductService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,9 +25,10 @@ public class ProductController {
 		return productService.findAll();
 	}
 
-	// 개별 조회 (PK + SK)
-	@GetMapping("/detail")
-	public Product getProduct(@RequestParam String pk, @RequestParam String sk) {
-		return productService.find(pk, sk);
+	@PostMapping("/crawl")
+	public String manualCrawl() {
+		List<ProductRecord> crawled = productService.getProductCrawler().crawl();
+		productService.saveCrawledProducts(crawled);
+		return "크롤링 완료: " + crawled.size() + "개";
 	}
 }
